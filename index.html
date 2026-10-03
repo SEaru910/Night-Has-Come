@@ -1,0 +1,2285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NIGHT HAS COME (밤이 되었습니다) — Death Game Mafia App</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;0,800;1,400&family=Orbitron:wght@600;800;900&family=Outfit:wght@300;400;600;700;800;900&family=Noto+Sans+KR:wght@400;700;900&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void: #050608;
+      --phone-bezel: #12141c;
+      --phone-body: #090a0f;
+      --blood-red: #ff003c;
+      --blood-dark: #7a001c;
+      --blood-glow: rgba(255, 0, 60, 0.45);
+      --tech-cyan: #00f0ff;
+      --tech-cyan-glow: rgba(0, 240, 255, 0.35);
+      --tech-purple: #9d4edd;
+      --warning-amber: #ffb703;
+      --terminal-green: #00ff88;
+      --card-bg: rgba(16, 19, 28, 0.82);
+      --card-border: rgba(255, 255, 255, 0.09);
+      --card-hover: rgba(255, 255, 255, 0.14);
+      --text-main: #f0f3fa;
+      --text-muted: rgba(240, 243, 250, 0.6);
+      --text-dark: #090a0f;
+      --glass-panel: rgba(13, 16, 25, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      position: relative;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(255, 0, 60, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(10, 12, 18, 1) 0%, #030406 100%);
+    }
+
+    /* CRT Scanline & Grain FX */
+    .crt-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 999;
+      background: linear-gradient(rgba(18, 16, 26, 0) 50%, rgba(0, 0, 0, 0.3) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+      background-size: 100% 3px, 6px 100%;
+      opacity: 0.85;
+    }
+
+    /* Ambient Blood Light Pulse on Execution/Curse */
+    .curse-ambient-flash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 998;
+      background: radial-gradient(circle, rgba(255, 0, 60, 0.35) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .curse-ambient-flash.active {
+      opacity: 1;
+      animation: pulseCurse 1.8s infinite alternate;
+    }
+
+    @keyframes pulseCurse {
+      0% {
+        opacity: 0.3;
+      }
+
+      100% {
+        opacity: 0.85;
+      }
+    }
+
+    /* Outer Wrapper & Responsive Canvas */
+    .app-container {
+      width: 100%;
+      max-width: 440px;
+      height: 910px;
+      max-height: 96vh;
+      background: var(--phone-bezel);
+      border-radius: 46px;
+      padding: 10px;
+      box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.95),
+        0 0 0 2px rgba(255, 255, 255, 0.09),
+        0 0 40px rgba(255, 0, 60, 0.18);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.5s ease;
+    }
+
+    .app-container.night-mode {
+      box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.95),
+        0 0 0 2px rgba(255, 0, 60, 0.4),
+        0 0 50px rgba(255, 0, 60, 0.3);
+    }
+
+    .phone-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--phone-body);
+      border-radius: 36px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* Top Status Bar & Dynamic Notch */
+    .status-bar {
+      height: 38px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      background: rgba(9, 10, 15, 0.95);
+      z-index: 80;
+      flex-shrink: 0;
+    }
+
+    .dynamic-island {
+      width: 110px;
+      height: 20px;
+      background: #000;
+      border-radius: 20px;
+      position: absolute;
+      top: 9px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+    }
+
+    .island-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--blood-red);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--blood-red);
+      animation: islandBlink 1.2s infinite;
+    }
+
+    @keyframes islandBlink {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.2;
+        transform: scale(0.6);
+      }
+    }
+
+    /* App Header Banner */
+    .app-header {
+      padding: 12px 18px 8px;
+      background: linear-gradient(180deg, rgba(255, 0, 60, 0.16) 0%, transparent 100%);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: 1.8px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-title span {
+      color: var(--blood-red);
+      text-shadow: 0 0 16px var(--blood-red);
+    }
+
+    .brand-subtitle {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1.2px;
+    }
+
+    .status-badge {
+      font-size: 0.65rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      background: rgba(255, 0, 60, 0.16);
+      border: 1px solid var(--blood-red);
+      color: #fff;
+      text-shadow: 0 0 8px var(--blood-red);
+    }
+
+    /* Main Scrollable Content */
+    .screen-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    .screen-content::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .screen-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 0, 60, 0.35);
+      border-radius: 4px;
+    }
+
+    /* Screen Transition */
+    .view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 13px;
+      animation: fadeInView 0.28s ease forwards;
+    }
+
+    .view-panel.active {
+      display: flex;
+    }
+
+    @keyframes fadeInView {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Reusable Cards */
+    .nhc-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nhc-card.crimson {
+      border-color: rgba(255, 0, 60, 0.35);
+      background: linear-gradient(145deg, rgba(255, 0, 60, 0.12) 0%, rgba(16, 19, 28, 0.9) 100%);
+      box-shadow: inset 0 0 20px rgba(255, 0, 60, 0.12);
+    }
+
+    .nhc-card.cyan {
+      border-color: rgba(0, 240, 255, 0.35);
+      background: linear-gradient(145deg, rgba(0, 240, 255, 0.08) 0%, rgba(16, 19, 28, 0.9) 100%);
+      box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.08);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 1.2px;
+      color: #fff;
+    }
+
+    /* Buttons */
+    .btn-action {
+      width: 100%;
+      padding: 13px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, var(--blood-red), #990024);
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 900;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 20px var(--blood-glow);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.15);
+      box-shadow: 0 0 28px var(--blood-glow);
+    }
+
+    .btn-action:active {
+      transform: scale(0.98);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-chip {
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-chip:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    /* Setup Options */
+    .player-counter-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-player-pill {
+      flex: 1;
+      padding: 8px 0;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-player-pill.active {
+      background: var(--blood-red);
+      border-color: var(--blood-red);
+      box-shadow: 0 0 16px var(--blood-glow);
+      transform: scale(1.04);
+    }
+
+    .mode-switch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-card {
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .mode-card.active {
+      border-color: var(--blood-red);
+      background: rgba(255, 0, 60, 0.14);
+      box-shadow: inset 0 0 14px rgba(255, 0, 60, 0.2);
+    }
+
+    .mode-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .mode-desc {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
+
+    /* Roster Table List & Custom Name Inputs */
+    .roster-preview-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .roster-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      gap: 6px;
+    }
+
+    .roster-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .roster-index {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--blood-red);
+      font-weight: 800;
+      width: 20px;
+    }
+
+    .player-name-input {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 5px 10px;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      outline: none;
+      width: 100%;
+      max-width: 175px;
+      transition: all 0.2s ease;
+    }
+
+    .player-name-input:focus {
+      border-color: var(--blood-red);
+      background: rgba(255, 0, 60, 0.14);
+      box-shadow: 0 0 12px rgba(255, 0, 60, 0.35);
+    }
+
+    .player-name-input::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+      font-weight: 400;
+    }
+
+    .roster-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--tech-cyan);
+      white-space: nowrap;
+    }
+
+    /* Secret Role Reveal Card */
+    .role-reveal-container {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 8px;
+    }
+
+    .pass-alert-box {
+      background: rgba(255, 0, 60, 0.18);
+      border: 1px solid var(--blood-red);
+      border-radius: 12px;
+      padding: 8px 14px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      animation: pulseNightBanner 2s infinite alternate;
+    }
+
+    .role-card-target {
+      width: 100%;
+      height: 240px;
+      background: radial-gradient(circle, #191629 0%, #0c0d14 100%);
+      border: 2px dashed rgba(255, 0, 60, 0.5);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .role-card-target.revealed {
+      border-style: solid;
+      border-color: var(--blood-red);
+      box-shadow: 0 0 35px rgba(255, 0, 60, 0.4), inset 0 0 25px rgba(255, 0, 60, 0.25);
+    }
+
+    .role-icon-big {
+      font-size: 3.6rem;
+      filter: drop-shadow(0 0 18px var(--blood-glow));
+    }
+
+    .role-name-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .role-role-mafia {
+      color: var(--blood-red);
+      text-shadow: 0 0 20px var(--blood-red);
+    }
+
+    .role-role-doctor {
+      color: #2ec4b6;
+      text-shadow: 0 0 20px #2ec4b6;
+    }
+
+    .role-role-police {
+      color: var(--tech-cyan);
+      text-shadow: 0 0 20px var(--tech-cyan);
+    }
+
+    .role-role-citizen {
+      color: #f4a261;
+      text-shadow: 0 0 20px #f4a261;
+    }
+
+    /* Phase Banner */
+    .phase-banner {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 1.4px;
+      font-weight: 900;
+    }
+
+    .phase-banner.day-style {
+      background: linear-gradient(90deg, rgba(255, 183, 3, 0.15), rgba(255, 0, 60, 0.15));
+      border: 1px solid rgba(255, 183, 3, 0.5);
+      color: var(--warning-amber);
+    }
+
+    .phase-banner.night-style {
+      background: linear-gradient(90deg, rgba(255, 0, 60, 0.25), rgba(157, 78, 221, 0.25));
+      border: 1px solid var(--blood-red);
+      color: #fff;
+      animation: pulseNightBanner 2s infinite alternate;
+    }
+
+    @keyframes pulseNightBanner {
+      from {
+        box-shadow: inset 0 0 10px rgba(255, 0, 60, 0.2);
+      }
+
+      to {
+        box-shadow: inset 0 0 25px rgba(255, 0, 60, 0.6), 0 0 15px rgba(255, 0, 60, 0.4);
+      }
+    }
+
+    /* Interactive Grid of Classmates */
+    .students-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .student-pill {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .student-pill:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .student-pill.selected {
+      border-color: var(--blood-red);
+      background: rgba(255, 0, 60, 0.16);
+      box-shadow: 0 0 16px rgba(255, 0, 60, 0.4);
+      transform: scale(1.02);
+    }
+
+    .student-pill.eliminated {
+      opacity: 0.38;
+      filter: grayscale(1);
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .student-pill.eliminated::after {
+      content: 'DEATH PENALTY';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-12deg);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 900;
+      color: var(--blood-red);
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid var(--blood-red);
+      padding: 2px 4px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .student-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .student-name-text {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 110px;
+    }
+
+    .student-tag-pill {
+      font-size: 0.62rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--tech-cyan);
+    }
+
+    .student-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    .vote-bubble-count {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--blood-red);
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 900;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px var(--blood-red);
+    }
+
+    /* In-Game Tab System (Chat vs CCTV vs GPS Boundary vs Ability) */
+    .feature-tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 3px;
+      border-radius: 10px;
+    }
+
+    .tab-trigger {
+      flex: 1;
+      padding: 6px 0;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-trigger.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* Chat Stream */
+    .stream-panel {
+      height: 145px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chat-row {
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      animation: fadeInChat 0.2s ease;
+    }
+
+    @keyframes fadeInChat {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .chat-row.host-broadcast {
+      background: rgba(255, 0, 60, 0.15);
+      border-left: 3px solid var(--blood-red);
+    }
+
+    .chat-sender-label {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--tech-cyan);
+    }
+
+    .chat-msg-text {
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.3;
+    }
+
+    /* CCTV View */
+    .cctv-viewer {
+      height: 145px;
+      background: #040508;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background-image: radial-gradient(rgba(0, 240, 255, 0.09) 1px, transparent 1px);
+      background-size: 8px 8px;
+    }
+
+    .cctv-top-bar {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--tech-cyan);
+    }
+
+    .rec-indicator {
+      color: var(--blood-red);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      animation: islandBlink 1s infinite;
+    }
+
+    /* GPS White Line Boundary Warning View */
+    .gps-boundary-box {
+      height: 145px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 0, 60, 0.3);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .radar-circle {
+      position: relative;
+      width: 100%;
+      height: 80px;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, rgba(255, 0, 60, 0.05) 70%, transparent 100%);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .radar-sweep {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: conic-gradient(from 0deg at 50% 50%, rgba(0, 240, 255, 0) 0deg, rgba(0, 240, 255, 0.25) 60deg, transparent 61deg);
+      animation: sweepRadar 3s linear infinite;
+    }
+
+    @keyframes sweepRadar {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Modal / Execution Popup */
+    .curse-dialog {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 6, 9, 0.96);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      backdrop-filter: blur(18px);
+      animation: dialogPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .curse-dialog.active {
+      display: flex;
+    }
+
+    @keyframes dialogPop {
+      from {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-skull-icon {
+      font-size: 3.8rem;
+      filter: drop-shadow(0 0 25px var(--blood-red));
+      animation: islandBlink 1.4s infinite;
+    }
+
+    .modal-headline {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--blood-red);
+      text-shadow: 0 0 20px var(--blood-red);
+      margin: 12px 0 6px;
+    }
+
+    .modal-subtext {
+      font-size: 0.82rem;
+      color: var(--text-main);
+      line-height: 1.45;
+      margin-bottom: 20px;
+    }
+
+    /* Direct Messaging Modal */
+    .dm-input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .dm-input-field {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 0.78rem;
+      outline: none;
+    }
+
+    .dm-input-field:focus {
+      border-color: var(--tech-cyan);
+    }
+
+    /* Bottom Home Indicator */
+    .phone-bottom-bar {
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .home-pill {
+      width: 100px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="crt-overlay"></div>
+  <div class="curse-ambient-flash" id="ambient-flash"></div>
+
+  <!-- Main Smart Phone Canvas -->
+  <main class="app-container" id="app-container">
+    <div class="phone-screen">
+
+      <!-- Top Status Bar & Dynamic Island -->
+      <div class="status-bar">
+        <span id="clock-display">00:00</span>
+        <div class="dynamic-island" onclick="triggerHostVoiceTest()" title="Tap to test Host Voice Broadcast">
+          <span class="island-dot"></span>
+          <span style="font-size:0.58rem; color:#fff; font-family:'Orbitron',sans-serif; letter-spacing:0.8px;">MAFIA
+            HOST</span>
+        </div>
+        <span>5G ▮▮▮ 96%</span>
+      </div>
+
+      <!-- App Header -->
+      <header class="app-header">
+        <div>
+          <h1 class="brand-title">NIGHT HAS <span>COME</span></h1>
+          <span class="brand-subtitle">MOOJIN RETREAT • CURSED PHONE OS</span>
+        </div>
+        <div class="status-badge" id="pill-status-mode">SYSTEM READY</div>
+      </header>
+
+      <!-- Main Scrollable Content Views -->
+      <div class="screen-content" id="screen-viewport">
+
+        <!-- ================= VIEW 1: SETUP & ROSTER ================= -->
+        <section class="view-panel active" id="view-setup">
+
+          <div class="nhc-card crimson">
+            <div class="card-head">
+              <span>HOST SYSTEM WARNING</span>
+              <span style="color:var(--blood-red); font-size:0.72rem;">GPS LOCKED</span>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+              A cursed application has taken over the students' phones at the abandoned retreat center. Follow the rules
+              or suffer the death penalty.
+            </p>
+          </div>
+
+          <!-- Player Count Selector (5-9 Players) -->
+          <div class="nhc-card">
+            <div class="card-head">
+              <span>NUMBER OF PLAYERS</span>
+              <span style="font-size:0.7rem; color:var(--tech-cyan);" id="player-count-label">5 Students</span>
+            </div>
+            <div class="player-counter-row">
+              <button class="btn-player-pill active" onclick="selectPlayerCount(5)">5</button>
+              <button class="btn-player-pill" onclick="selectPlayerCount(6)">6</button>
+              <button class="btn-player-pill" onclick="selectPlayerCount(7)">7</button>
+              <button class="btn-player-pill" onclick="selectPlayerCount(8)">8</button>
+              <button class="btn-player-pill" onclick="selectPlayerCount(9)">9</button>
+            </div>
+            <div style="font-size:0.68rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;"
+              id="role-dist-text">
+              1 Mafia • 1 Doctor • 1 Police • 2 Citizens
+            </div>
+          </div>
+
+          <!-- Game Mode (Solo AI vs Pass & Play) -->
+          <div class="nhc-card">
+            <div class="card-head">GAMEPLAY MODE</div>
+            <div class="mode-switch-grid">
+              <div class="mode-card active" id="mode-opt-solo" onclick="selectGameMode('solo')">
+                <div class="mode-title">🕵️ Solo Detective</div>
+                <div class="mode-desc">Play against smart bot classmates with unique personalities & bluffs.</div>
+              </div>
+              <div class="mode-card" id="mode-opt-pass" onclick="selectGameMode('pass')">
+                <div class="mode-title">📱 Pass &amp; Play (Friends)</div>
+                <div class="mode-desc">Hotseat multiplayer. Pass phone between friends each turn!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Classmates Roster Preview & Editable Names -->
+          <div class="nhc-card">
+            <div class="card-head">
+              <span>STUDENT NAMES &amp; ROSTER</span>
+              <div style="display:flex; gap:4px;">
+                <button class="btn-chip" onclick="resetRosterNames(false)">Cast Names</button>
+                <button class="btn-chip" onclick="resetRosterNames(true)">Friends Names</button>
+              </div>
+            </div>
+            <div style="font-size:0.68rem; color:var(--text-muted);">
+              Type your friends' names below for each player slot:
+            </div>
+            <div class="roster-preview-box" id="setup-roster-list">
+              <!-- Rendered via JS with input boxes -->
+            </div>
+          </div>
+
+          <button class="btn-action" onclick="bootGameSession()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            Initialize Death Game
+          </button>
+
+        </section>
+
+        <!-- ================= VIEW 2: CONFIDENTIAL ROLE REVEAL ================= -->
+        <section class="view-panel" id="view-role-reveal">
+          <div class="role-reveal-container">
+
+            <div class="pass-alert-box" id="pass-phone-warning" style="display:none;">
+              📱 PASS PHONE TO: <span id="pass-target-name" style="color:var(--tech-cyan);">Friend</span>
+            </div>
+
+            <div
+              style="font-family:'Orbitron',sans-serif; font-size:0.75rem; color:var(--text-muted); letter-spacing:2px;">
+              CONFIDENTIAL ROLE ASSIGNMENT
+            </div>
+            <h2 style="font-size:1.35rem; font-weight:900; color:#fff;" id="reveal-student-name">Student #1</h2>
+
+            <!-- Interactive Reveal Card -->
+            <div class="role-card-target" id="role-flip-card" onclick="flipRoleCard()">
+              <div id="card-state-secret" style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <div style="font-size:2.8rem; opacity:0.7;">🔒</div>
+                <div
+                  style="font-family:'Orbitron',sans-serif; font-size:0.85rem; color:var(--blood-red); font-weight:800;">
+                  TAP TO REVEAL IDENTITY
+                </div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">Ensure nobody is looking at your screen!</div>
+              </div>
+
+              <div id="card-state-open"
+                style="display:none; flex-direction:column; align-items:center; gap:6px; padding:0 12px;">
+                <div class="role-icon-big" id="open-role-icon">🔪</div>
+                <div class="role-name-display" id="open-role-title">MAFIA</div>
+                <p style="font-size:0.74rem; color:var(--text-muted); line-height:1.35; max-width:90%;"
+                  id="open-role-desc">
+                  Eliminate innocent classmates during the night. Blend in during the day.
+                </p>
+                <div style="font-size:0.65rem; color:var(--tech-cyan); font-family:'JetBrains Mono',monospace;"
+                  id="open-role-skill">
+                  Skill: Midnight Execution
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-action" id="btn-reveal-next" onclick="handleNextRoleStep()">
+              I Understand My Role ➔
+            </button>
+          </div>
+        </section>
+
+        <!-- ================= VIEW 3: MAIN GAMEPLAY ARENA ================= -->
+        <section class="view-panel" id="view-gameplay">
+
+          <!-- Phase Banner -->
+          <div class="phase-banner day-style" id="game-phase-banner">
+            DAY 1 — DISCUSSION &amp; VOTING
+          </div>
+
+          <!-- Pass Turn Notice in Multiplayer -->
+          <div class="pass-alert-box" id="gameplay-pass-notice" style="display:none; text-align:center;">
+            📱 CURRENT TURN: <span id="gameplay-active-turn-player" style="color:var(--tech-cyan);">Player</span>
+          </div>
+
+          <!-- Countdown Timer & Emergency Curfew Status -->
+          <div class="nhc-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:0.65rem; font-family:'JetBrains Mono',monospace; color:var(--text-muted);">
+                  DEADLINE UNTIL MIDNIGHT</div>
+                <div style="font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:900; color:#fff;"
+                  id="countdown-timer">00:45</div>
+              </div>
+              <button class="btn-secondary" style="width:auto; padding:6px 14px; font-size:0.72rem;"
+                onclick="fastForwardPhase()">
+                Skip Timer ⏩
+              </button>
+            </div>
+            <div style="font-size:0.73rem; color:rgba(255,255,255,0.85); line-height:1.35;" id="phase-guide-text">
+              Debate with classmates. Cast your vote before midnight or face automatic execution!
+            </div>
+          </div>
+
+          <!-- Feature Tabs: Class Chat / CCTV Feeds / Boundary GPS / Secret DM -->
+          <div class="feature-tabs">
+            <button class="tab-trigger active" id="tab-btn-chat" onclick="changeGameTab('chat')">💬 Class Chat</button>
+            <button class="tab-trigger" id="tab-btn-cctv" onclick="changeGameTab('cctv')">📹 CCTV Feeds</button>
+            <button class="tab-trigger" id="tab-btn-gps" onclick="changeGameTab('gps')">🚨 Boundary GPS</button>
+            <button class="tab-trigger" id="tab-btn-dm" onclick="changeGameTab('dm')">✉️ Secret Whisper</button>
+          </div>
+
+          <!-- TAB 1: Chat Stream -->
+          <div class="stream-panel" id="panel-chat-stream">
+            <!-- Messages added in JS -->
+          </div>
+
+          <!-- TAB 2: CCTV Feed Viewer -->
+          <div class="cctv-viewer" id="panel-cctv-view" style="display:none;">
+            <div class="cctv-top-bar">
+              <span id="cctv-camera-label">CAM-01 [MAIN LOBBY]</span>
+              <span class="rec-indicator">● LIVE REC</span>
+            </div>
+            <div style="text-align:center; padding:10px 0;">
+              <div style="font-family:'Orbitron',sans-serif; font-size:0.9rem; color:#fff;" id="cctv-location-title">
+                Central Hallway</div>
+              <div style="font-size:0.68rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;"
+                id="cctv-motion-status">
+                Motion detected: 2 students
+              </div>
+            </div>
+            <div style="display:flex; justify-content:center; gap:8px;">
+              <button class="btn-secondary" style="width:auto; padding:3px 10px; font-size:0.65rem;"
+                onclick="cycleCctvCamera(-1)">◀ Prev</button>
+              <button class="btn-secondary" style="width:auto; padding:3px 10px; font-size:0.65rem;"
+                onclick="cycleCctvCamera(1)">Next ▶</button>
+            </div>
+          </div>
+
+          <!-- TAB 3: GPS White Boundary Zone (KDrama Lore) -->
+          <div class="gps-boundary-box" id="panel-gps-boundary" style="display:none;">
+            <div
+              style="display:flex; justify-content:space-between; font-size:0.68rem; font-family:'JetBrains Mono',monospace;">
+              <span>CURFEW ZONE: RETREAT COMPOUND</span>
+              <span style="color:var(--terminal-green);">SIGNAL STABLE</span>
+            </div>
+            <div class="radar-circle">
+              <div class="radar-sweep"></div>
+              <span style="font-size:0.7rem; color:#fff; z-index:2; font-family:'Orbitron',sans-serif;">WHITE LINE
+                BOUNDARY SAFE</span>
+            </div>
+            <div style="font-size:0.65rem; color:var(--text-muted); text-align:center;">
+              Crossing the white perimeter at night will trigger immediate elimination.
+            </div>
+          </div>
+
+          <!-- TAB 4: Secret Whisper / Direct Message -->
+          <div class="nhc-card" id="panel-dm-chat" style="display:none; padding:8px 12px;">
+            <div style="font-size:0.7rem; color:var(--tech-cyan); font-family:'JetBrains Mono',monospace;">
+              WHISPER TO A CLASSMATE
+            </div>
+            <div class="dm-input-row">
+              <input type="text" class="dm-input-field" id="dm-message-input" placeholder="Whisper suspicious clue..."
+                maxlength="50" onkeydown="if(event.key==='Enter')sendDirectWhisper()" />
+              <button class="btn-secondary" style="width:auto; padding:0 12px; font-size:0.75rem;"
+                onclick="sendDirectWhisper()">Send</button>
+            </div>
+          </div>
+
+          <!-- Action Prompt & Student Voting Grid -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+            <span style="font-family:'Orbitron',sans-serif; font-size:0.76rem; font-weight:800; color:#fff;"
+              id="action-header-title">
+              SELECT SUSPECT TO VOTE:
+            </span>
+            <span style="font-size:0.68rem; color:var(--tech-cyan); font-family:'JetBrains Mono',monospace;"
+              id="current-target-label">
+              None selected
+            </span>
+          </div>
+
+          <!-- Classmates Interactive Grid -->
+          <div class="students-grid" id="students-voting-grid">
+            <!-- Populated via JS -->
+          </div>
+
+          <!-- Confirm Action Button -->
+          <button class="btn-action" id="btn-submit-action" onclick="submitPlayerAction()">
+            Confirm Vote 🗳️
+          </button>
+
+        </section>
+
+        <!-- ================= VIEW 4: GAME OVER SCREEN ================= -->
+        <section class="view-panel" id="view-gameover">
+          <div class="nhc-card crimson" style="text-align:center; padding:24px 14px;">
+            <div style="font-size:3.5rem;" id="gameover-skull-icon">🏆</div>
+            <h2 style="font-family:'Orbitron',sans-serif; font-size:1.45rem; font-weight:900; margin:10px 0 6px;"
+              id="gameover-headline">
+              CITIZENS SURVIVED
+            </h2>
+            <p style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;" id="gameover-details">
+              All Mafia conspirators were identified and purged. The curse on Moojin Retreat has been lifted!
+            </p>
+          </div>
+
+          <!-- Final Roster Reveal -->
+          <div class="nhc-card">
+            <div class="card-head">FINAL ROSTER &amp; IDENTITIES</div>
+            <div class="roster-preview-box" id="final-summary-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <button class="btn-action" onclick="restartSetup()">
+            Play Again 🔄
+          </button>
+        </section>
+
+      </div>
+
+      <!-- Execution / Night Death Result Dialog -->
+      <div class="curse-dialog" id="death-modal">
+        <div class="modal-skull-icon" id="modal-icon-symbol">💀</div>
+        <h3 class="modal-headline" id="modal-headline-title">EXECUTION OCCURRED</h3>
+        <p class="modal-subtext" id="modal-body-desc">
+          A student has fallen victim to the midnight curse.
+        </p>
+        <button class="btn-action" onclick="dismissDeathModal()">
+          Proceed to Next Phase ➔
+        </button>
+      </div>
+
+      <!-- Bottom Home Indicator -->
+      <div class="phone-bottom-bar">
+        <div class="home-pill"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    /* =================================================================
+       1. SYNTHESIZED SOUND ENGINE & KOREAN/ENGLISH HOST VOICE
+       ================================================================= */
+    let audioContext = null;
+
+    function getAudioContext() {
+      if (!audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioCtx();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      return audioContext;
+    }
+
+    function playSfx(type) {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+
+      if (type === 'tap') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, t);
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.1);
+      } else if (type === 'alert') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(850, t + 0.25);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      } else if (type === 'heartbeat') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(55, t);
+        osc.frequency.exponentialRampToValueAtTime(25, t + 0.15);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.18);
+      } else if (type === 'curse_death') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(280, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.85);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.9);
+      } else if (type === 'heal_chime') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, t);
+        osc.frequency.exponentialRampToValueAtTime(1046.5, t + 0.3);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.4);
+      }
+    }
+
+    // Iconic KDrama Host Speech Announcement System
+    function speakHostBroadcast(koreanText, englishText) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(englishText);
+      utterance.rate = 0.92;
+      utterance.pitch = 0.85;
+
+      const voices = window.speechSynthesis.getVoices();
+      const koreanVoice = voices.find(v => v.lang.includes('ko'));
+      if (koreanVoice) {
+        const koUtterance = new SpeechSynthesisUtterance(koreanText);
+        koUtterance.voice = koreanVoice;
+        koUtterance.rate = 0.9;
+        koUtterance.pitch = 0.85;
+        window.speechSynthesis.speak(koUtterance);
+        return;
+      }
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function triggerHostVoiceTest() {
+      playSfx('alert');
+      speakHostBroadcast("밤이 되었습니다. 마피아는 고개를 들어주세요.", "Night has come. The Mafia must choose a target.");
+    }
+
+    /* =================================================================
+       2. CHARACTER CAST & ROLES DATA (Moojin High Class 2-3)
+       ================================================================= */
+    const DEFAULT_CAST = [
+      { name: "Lee Yoon-seo", tag: "Intuitive", avatar: "👧", skill: "Subtle Clue Detection" },
+      { name: "Kim Jun-hee", tag: "Class Pres", avatar: "🧑‍💼", skill: "Leadership Influence" },
+      { name: "Oh Jung-won", tag: "Tech Hacker", avatar: "💻", skill: "CCTV Log Decryption" },
+      { name: "Go Kyung-jun", tag: "Delinquent", avatar: "🥊", skill: "Aggressive Interrogate" },
+      { name: "Kim So-mi", tag: "Influencer", avatar: "📱", skill: "Rumor Spreader" },
+      { name: "Jin Da-beom", tag: "Quiet Student", avatar: "🎧", skill: "Stealth Listener" },
+      { name: "Park Woo-ram", tag: "Camcorder", avatar: "📹", skill: "Movement Tracker" },
+      { name: "Min Da-hee", tag: "Timid", avatar: "🥺", skill: "Heartbeat Panic" },
+      { name: "Shin Seung-bin", tag: "Athlete", avatar: "🏃", skill: "Fast Evasion" }
+    ];
+
+    // User-entered customized names storage (up to 9 players)
+    let playerCustomNames = ["", "", "", "", "", "", "", "", ""];
+
+    const ROLE_DEFINITIONS = {
+      mafia: {
+        title: "MAFIA",
+        icon: "🔪",
+        className: "role-role-mafia",
+        desc: "You are the killer. Secretly choose a classmate to eliminate each night and blend in during the day.",
+        skill: "Night Assassination",
+        team: "mafia"
+      },
+      doctor: {
+        title: "DOCTOR",
+        icon: "💉",
+        className: "role-role-doctor",
+        desc: "Choose one classmate to inject with an antidote each night to prevent their execution.",
+        skill: "Curse Antidote (Self-heal limit: 1)",
+        team: "citizen"
+      },
+      police: {
+        title: "POLICE",
+        icon: "🔦",
+        className: "role-role-police",
+        desc: "Investigate one suspect's biometric profile each night to uncover if they are Mafia or Citizen.",
+        skill: "Flashlight Phone Scan",
+        team: "citizen"
+      },
+      citizen: {
+        title: "CITIZEN",
+        icon: "👤",
+        className: "role-role-citizen",
+        desc: "Innocent student. Observe CCTV feeds, analyze heartbeat rates, and vote out the Mafia during daylight.",
+        skill: "Democratic Vote & Survival",
+        team: "citizen"
+      }
+    };
+
+    const RETREAT_CAMERAS = [
+      { id: "CAM-01", name: "Main Lobby & Stairs", desc: "Corridor junction" },
+      { id: "CAM-02", name: "Abandoned Gymnasium", desc: "Old bleachers & exit" },
+      { id: "CAM-03", name: "Cafeteria & Kitchen", desc: "Pantry doors" },
+      { id: "CAM-04", name: "Dark Forest Fence", desc: "White Line boundary" }
+    ];
+
+    /* =================================================================
+       3. GAME STATE & SETUP
+       ================================================================= */
+    let selectedPlayerCount = 5;
+    let selectedMode = 'solo'; // 'solo' | 'pass'
+    let currentStudents = [];
+    let revealIndex = 0;
+    let isRoleFlipped = false;
+
+    // Phases
+    let currentPhase = 'night_mafia'; // Start with Night 1
+    let currentDayNumber = 1;
+    let timerCountdown = 45;
+    let timerHandle = null;
+
+    // Target tracking
+    let targetedStudentId = null;
+    let nightMafiaChoice = null;
+    let nightDoctorChoice = null;
+    let nightPoliceChoice = null;
+    let tallyDayVotes = {};
+    let activeCctvIndex = 0;
+
+    // Pass & Play multi-turn tracking
+    let passPlayVoterIndex = 0;
+
+    function updateClock() {
+      const d = new Date();
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      document.getElementById('clock-display').innerText = `${h}:${m}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function selectPlayerCount(count) {
+      selectedPlayerCount = count;
+      document.querySelectorAll('.btn-player-pill').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.innerText) === count);
+      });
+
+      const countLabel = document.getElementById('player-count-label');
+      const distLabel = document.getElementById('role-dist-text');
+      countLabel.innerText = `${count} Students`;
+
+      if (count === 5) distLabel.innerText = "1 Mafia • 1 Doctor • 1 Police • 2 Citizens";
+      else if (count === 6) distLabel.innerText = "2 Mafia • 1 Doctor • 1 Police • 2 Citizens";
+      else if (count === 7) distLabel.innerText = "2 Mafia • 1 Doctor • 1 Police • 3 Citizens";
+      else if (count === 8) distLabel.innerText = "2 Mafia • 1 Doctor • 1 Police • 4 Citizens";
+      else if (count === 9) distLabel.innerText = "3 Mafia • 1 Doctor • 1 Police • 4 Citizens";
+
+      renderSetupRoster();
+      playSfx('tap');
+    }
+
+    function selectGameMode(mode) {
+      selectedMode = mode;
+      document.getElementById('mode-opt-solo').classList.toggle('active', mode === 'solo');
+      document.getElementById('mode-opt-pass').classList.toggle('active', mode === 'pass');
+
+      if (mode === 'pass') {
+        for (let i = 0; i < 9; i++) {
+          if (!playerCustomNames[i] || DEFAULT_CAST.some(d => d.name === playerCustomNames[i])) {
+            playerCustomNames[i] = `Friend #${i + 1}`;
+          }
+        }
+      }
+      renderSetupRoster();
+      playSfx('tap');
+    }
+
+    function resetRosterNames(useFriendsPlaceholder) {
+      playSfx('tap');
+      for (let i = 0; i < 9; i++) {
+        if (useFriendsPlaceholder) {
+          playerCustomNames[i] = `Friend #${i + 1}`;
+        } else {
+          playerCustomNames[i] = DEFAULT_CAST[i].name;
+        }
+      }
+      renderSetupRoster();
+    }
+
+    function updatePlayerName(idx, val) {
+      playerCustomNames[idx] = val.trim();
+    }
+
+    function renderSetupRoster() {
+      const rosterBox = document.getElementById('setup-roster-list');
+      rosterBox.innerHTML = '';
+
+      for (let i = 0; i < selectedPlayerCount; i++) {
+        const defaultChar = DEFAULT_CAST[i];
+        const currentName = playerCustomNames[i] || (selectedMode === 'pass' ? `Friend #${i + 1}` : defaultChar.name);
+
+        const row = document.createElement('div');
+        row.className = 'roster-row';
+        row.innerHTML = `
+          <div class="roster-info">
+            <span class="roster-index">#${i + 1}</span>
+            <span style="font-size:1.1rem;">${defaultChar.avatar}</span>
+            <input 
+              type="text" 
+              class="player-name-input" 
+              value="${currentName}" 
+              placeholder="Friend #${i + 1} Name" 
+              maxlength="20"
+              oninput="updatePlayerName(${i}, this.value)"
+              onfocus="this.select()"
+            />
+          </div>
+          <span class="roster-badge">${defaultChar.tag}</span>
+        `;
+        rosterBox.appendChild(row);
+      }
+    }
+    renderSetupRoster();
+
+    /* =================================================================
+       4. BOOT SESSION & DEAL ROLES
+       ================================================================= */
+    function bootGameSession() {
+      playSfx('alert');
+
+      // Build role deck based on player count
+      const deck = [];
+      let mafiaCount = 1;
+      if (selectedPlayerCount >= 6 && selectedPlayerCount <= 8) mafiaCount = 2;
+      else if (selectedPlayerCount === 9) mafiaCount = 3;
+
+      for (let i = 0; i < mafiaCount; i++) deck.push('mafia');
+      deck.push('doctor');
+      deck.push('police');
+      while (deck.length < selectedPlayerCount) {
+        deck.push('citizen');
+      }
+
+      // Cryptographically strong multi-pass Fisher-Yates Randomizer
+      function getRandomInt(max) {
+        if (window.crypto && window.crypto.getRandomValues) {
+          const arr = new Uint32Array(1);
+          window.crypto.getRandomValues(arr);
+          return arr[0] % max;
+        }
+        return Math.floor(Math.random() * max);
+      }
+
+      // Multi-pass thorough shuffling
+      for (let round = 0; round < 7; round++) {
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = getRandomInt(i + 1);
+          const temp = deck[i];
+          deck[i] = deck[j];
+          deck[j] = temp;
+        }
+      }
+
+      // Initialize students with randomly assigned roles
+      currentStudents = [];
+      for (let i = 0; i < selectedPlayerCount; i++) {
+        const defaultChar = DEFAULT_CAST[i];
+        const finalName = (playerCustomNames[i] && playerCustomNames[i].trim().length > 0)
+          ? playerCustomNames[i].trim()
+          : (selectedMode === 'pass' ? `Friend #${i + 1}` : defaultChar.name);
+
+        currentStudents.push({
+          id: i,
+          name: finalName,
+          avatar: defaultChar.avatar,
+          tag: defaultChar.tag,
+          skill: defaultChar.skill,
+          role: deck[i], // Completely randomized role assignment
+          isAlive: true,
+          isUser: (selectedMode === 'solo' && i === 0),
+          heartRate: Math.floor(Math.random() * 20 + 74),
+          location: RETREAT_CAMERAS[i % RETREAT_CAMERAS.length].name
+        });
+      }
+
+      revealIndex = 0;
+      showRoleRevealStep(0);
+      switchViewPanel('view-role-reveal');
+    }
+
+    function showRoleRevealStep(idx) {
+      isRoleFlipped = false;
+      const s = currentStudents[idx];
+
+      // Pass phone notice for multiplayer
+      const passAlert = document.getElementById('pass-phone-warning');
+      if (selectedMode === 'pass') {
+        passAlert.style.display = 'block';
+        document.getElementById('pass-target-name').innerText = s.name;
+      } else {
+        passAlert.style.display = 'none';
+      }
+
+      document.getElementById('reveal-student-name').innerText = `${s.avatar} ${s.name} ${s.isUser ? '(YOU)' : ''}`;
+
+      const card = document.getElementById('role-flip-card');
+      card.classList.remove('revealed');
+      document.getElementById('card-state-secret').style.display = 'flex';
+      document.getElementById('card-state-open').style.display = 'none';
+
+      const roleDef = ROLE_DEFINITIONS[s.role];
+      document.getElementById('open-role-icon').innerText = roleDef.icon;
+      document.getElementById('open-role-title').innerText = roleDef.title;
+      document.getElementById('open-role-title').className = `role-name-display ${roleDef.className}`;
+      document.getElementById('open-role-desc').innerText = roleDef.desc;
+      document.getElementById('open-role-skill').innerText = `Special Trait: ${s.skill}`;
+
+      const btn = document.getElementById('btn-reveal-next');
+      if (selectedMode === 'solo') {
+        btn.innerText = "Enter Night 1 🌙";
+      } else {
+        const nextStudent = currentStudents[idx + 1];
+        btn.innerText = (idx < selectedPlayerCount - 1)
+          ? `Pass Phone to ${nextStudent ? nextStudent.name : 'Next'} ➔`
+          : "Enter Night 1 🌙";
+      }
+    }
+
+    function flipRoleCard() {
+      playSfx('tap');
+      isRoleFlipped = !isRoleFlipped;
+      const card = document.getElementById('role-flip-card');
+      card.classList.toggle('revealed', isRoleFlipped);
+      document.getElementById('card-state-secret').style.display = isRoleFlipped ? 'none' : 'flex';
+      document.getElementById('card-state-open').style.display = isRoleFlipped ? 'flex' : 'none';
+    }
+
+    // After all roles revealed -> GAME STARTS AT NIGHT 1 (NOT voting immediately!)
+    function handleNextRoleStep() {
+      playSfx('tap');
+      if (selectedMode === 'solo') {
+        initiateNightPhase();
+      } else {
+        revealIndex++;
+        if (revealIndex < selectedPlayerCount) {
+          showRoleRevealStep(revealIndex);
+        } else {
+          initiateNightPhase();
+        }
+      }
+    }
+
+    /* =================================================================
+       5. DAY PHASE (Discussion, Chat & Voting)
+       ================================================================= */
+    function initiateDayPhase() {
+      currentPhase = 'day';
+      targetedStudentId = null;
+      tallyDayVotes = {};
+      passPlayVoterIndex = 0;
+
+      document.getElementById('app-container').classList.remove('night-mode');
+      document.getElementById('ambient-flash').classList.remove('active');
+
+      switchViewPanel('view-gameplay');
+      document.getElementById('pill-status-mode').innerText = `DAY ${currentDayNumber}`;
+
+      const banner = document.getElementById('game-phase-banner');
+      banner.className = 'phase-banner day-style';
+      banner.innerText = `DAY ${currentDayNumber} — DISCUSSION & VOTING`;
+
+      updateGameplayTurnNotice();
+
+      document.getElementById('phase-guide-text').innerText = "Morning has broken! Review overnight logs and CCTV, debate in chat, and vote out the suspect before midnight.";
+      document.getElementById('action-header-title').innerText = "SELECT SUSPECT TO VOTE:";
+      document.getElementById('btn-submit-action').innerText = "Confirm Vote 🗳️";
+
+      playSfx('alert');
+      speakHostBroadcast("투표가 시작되었습니다. 자정 전까지 투표해주세요.", `Day ${currentDayNumber} has begun. Cast your vote before midnight.`);
+
+      startPhaseCountdown(55, () => resolveDayExecution());
+      renderVotingClassmates();
+      generateDayAtmosphericChat();
+    }
+
+    function updateGameplayTurnNotice() {
+      const notice = document.getElementById('gameplay-pass-notice');
+      if (selectedMode === 'pass' && currentPhase === 'day') {
+        const alivePlayers = currentStudents.filter(s => s.isAlive);
+        const currentVoter = alivePlayers[passPlayVoterIndex];
+        if (currentVoter) {
+          notice.style.display = 'block';
+          document.getElementById('gameplay-active-turn-player').innerText = `${currentVoter.avatar} ${currentVoter.name}'s Turn to Vote`;
+        } else {
+          notice.style.display = 'none';
+        }
+      } else {
+        notice.style.display = 'none';
+      }
+    }
+
+    function generateDayAtmosphericChat() {
+      const stream = document.getElementById('panel-chat-stream');
+      stream.innerHTML = '';
+
+      appendChatMessage("SYSTEM HOST", `☀️ Day ${currentDayNumber} morning has broken. Discussion is open. Midnight curfew approaches!`, true);
+
+      const livingOthers = currentStudents.filter(s => s.isAlive && !s.isUser);
+      const dialogues = [
+        "Did anyone hear loud footsteps near the second-floor stairs?",
+        "Look at the heart rate monitor, someone's spiking over 120!",
+        "I swear I'm an innocent citizen! Check the CCTV logs!",
+        "Don't waste votes on innocent students. Who was near the dark forest fence?",
+        "We need to stick together or the Mafia will pick us off one by one."
+      ];
+
+      livingOthers.forEach((stud, i) => {
+        setTimeout(() => {
+          if (currentPhase === 'day') {
+            const line = dialogues[i % dialogues.length];
+            appendChatMessage(stud.name, line, false);
+          }
+        }, (i + 1) * 2200);
+      });
+    }
+
+    function appendChatMessage(sender, text, isHost = false) {
+      const stream = document.getElementById('panel-chat-stream');
+      const row = document.createElement('div');
+      row.className = `chat-row ${isHost ? 'host-broadcast' : ''}`;
+      row.innerHTML = `
+        <span class="chat-sender-label" style="${isHost ? 'color:var(--blood-red);' : ''}">${sender}</span>
+        <span class="chat-msg-text">${text}</span>
+      `;
+      stream.appendChild(row);
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function sendDirectWhisper() {
+      const input = document.getElementById('dm-message-input');
+      const val = input.value.trim();
+      if (!val) return;
+      playSfx('tap');
+      appendChatMessage("YOU (Whisper)", val, false);
+      input.value = '';
+
+      setTimeout(() => {
+        const livingAI = currentStudents.filter(s => s.isAlive && !s.isUser);
+        if (livingAI.length > 0) {
+          const responder = livingAI[Math.floor(Math.random() * livingAI.length)];
+          const replies = [
+            "I heard you... I'll back your vote if you protect me.",
+            "Are you sure? What if you're the one lying?",
+            "Okay, let's watch their movements carefully on CCTV."
+          ];
+          appendChatMessage(`${responder.name} (Reply)`, replies[Math.floor(Math.random() * replies.length)], false);
+        }
+      }, 1400);
+    }
+
+    /* =================================================================
+       6. INTERACTIVE VOTING & TARGET SELECTION
+       ================================================================= */
+    function renderVotingClassmates() {
+      const grid = document.getElementById('students-voting-grid');
+      grid.innerHTML = '';
+
+      currentStudents.forEach(s => {
+        const pill = document.createElement('div');
+        pill.className = `student-pill ${!s.isAlive ? 'eliminated' : ''} ${targetedStudentId === s.id ? 'selected' : ''}`;
+
+        if (s.isAlive) {
+          pill.onclick = () => chooseTargetStudent(s.id);
+        }
+
+        const count = tallyDayVotes[s.id] || 0;
+        const countHtml = count > 0 ? `<div class="vote-bubble-count">${count}</div>` : '';
+
+        pill.innerHTML = `
+          ${countHtml}
+          <div class="student-head-row">
+            <span class="student-name-text">${s.avatar} ${s.name}</span>
+            <span class="student-tag-pill">${s.isUser ? '(YOU)' : s.tag}</span>
+          </div>
+          <div class="student-meta-row">
+            <span>BPM: ${s.isAlive ? s.heartRate : 0}</span>
+            <span style="color:var(--text-muted);">${s.location.split(' ')[0]}</span>
+          </div>
+        `;
+        grid.appendChild(pill);
+      });
+    }
+
+    function chooseTargetStudent(id) {
+      playSfx('tap');
+      targetedStudentId = id;
+      const t = currentStudents.find(s => s.id === id);
+      document.getElementById('current-target-label').innerText = `Target: ${t.name}`;
+      renderVotingClassmates();
+    }
+
+    function submitPlayerAction() {
+      if (targetedStudentId === null) {
+        playSfx('tap');
+        alert("Please select a student target first!");
+        return;
+      }
+
+      if (currentPhase === 'day') {
+        const alivePlayers = currentStudents.filter(s => s.isAlive);
+
+        if (selectedMode === 'solo') {
+          // Self-Voting penalty check
+          if (targetedStudentId === 0) {
+            playSfx('curse_death');
+            alert("⚠️ [PENALTY RULE] Voting for yourself is strictly prohibited in the Death Game! Pick someone else.");
+            return;
+          }
+
+          tallyDayVotes[targetedStudentId] = (tallyDayVotes[targetedStudentId] || 0) + 1;
+
+          // AI Votes
+          const livingAI = currentStudents.filter(s => s.isAlive && !s.isUser);
+          livingAI.forEach(ai => {
+            const valid = alivePlayers.filter(c => c.id !== ai.id);
+            const pick = valid[Math.floor(Math.random() * valid.length)];
+            tallyDayVotes[pick.id] = (tallyDayVotes[pick.id] || 0) + 1;
+          });
+
+          playSfx('alert');
+          resolveDayExecution();
+        } else {
+          // Pass & Play Mode: Each living player votes sequentially
+          const currentVoter = alivePlayers[passPlayVoterIndex];
+          if (targetedStudentId === currentVoter.id) {
+            playSfx('curse_death');
+            alert("⚠️ [PENALTY RULE] Voting for yourself is strictly prohibited! Choose another student.");
+            return;
+          }
+
+          tallyDayVotes[targetedStudentId] = (tallyDayVotes[targetedStudentId] || 0) + 1;
+          passPlayVoterIndex++;
+
+          if (passPlayVoterIndex < alivePlayers.length) {
+            targetedStudentId = null;
+            document.getElementById('current-target-label').innerText = 'None selected';
+            renderVotingClassmates();
+            updateGameplayTurnNotice();
+            playSfx('alert');
+            alert(`Vote cast! Please pass the phone to: ${alivePlayers[passPlayVoterIndex].name}`);
+          } else {
+            playSfx('alert');
+            resolveDayExecution();
+          }
+        }
+      } else if (currentPhase === 'night_mafia') {
+        nightMafiaChoice = targetedStudentId;
+        advanceNightSequence();
+      } else if (currentPhase === 'night_doctor') {
+        nightDoctorChoice = targetedStudentId;
+        advanceNightSequence();
+      } else if (currentPhase === 'night_police') {
+        nightPoliceChoice = targetedStudentId;
+        const scanned = currentStudents.find(s => s.id === nightPoliceChoice);
+        playSfx('alert');
+        alert(`[🔦 POLICE SCAN RESULT]\nStudent: ${scanned.name}\nResult: ${scanned.role === 'mafia' ? '🚨 MAFIA IDENTIFIED!' : '✅ INNOCENT CITIZEN'}`);
+        advanceNightSequence();
+      }
+    }
+
+    function resolveDayExecution() {
+      clearInterval(timerHandle);
+      playSfx('curse_death');
+      document.getElementById('ambient-flash').classList.add('active');
+
+      let highestVotes = -1;
+      let executedId = null;
+      let isTie = false;
+
+      for (const [idStr, count] of Object.entries(tallyDayVotes)) {
+        const id = parseInt(idStr);
+        if (count > highestVotes) {
+          highestVotes = count;
+          executedId = id;
+          isTie = false;
+        } else if (count === highestVotes) {
+          isTie = true;
+        }
+      }
+
+      if (executedId !== null && !isTie) {
+        const victim = currentStudents.find(s => s.id === executedId);
+        victim.isAlive = false;
+        speakHostBroadcast("투표 결과로 인해 처형이 진행됩니다.", `Execution carried out. ${victim.name} has died by class vote.`);
+        displayDeathDialog(
+          "MIDNIGHT EXECUTION",
+          `By majority vote of the class, ${victim.name} has succumbed to the retreat curse at midnight. (Identity: ${victim.role.toUpperCase()})`
+        );
+      } else {
+        speakHostBroadcast("투표가 동점입니다. 처형은 없습니다.", "The votes tied. No execution took place today.");
+        displayDeathDialog(
+          "VOTE TIED — NO EXECUTION",
+          "The votes were tied. No student received the majority. The silence of the night draws near..."
+        );
+      }
+    }
+
+    /* =================================================================
+       7. NIGHT PHASES & SPECIAL SKILLS (Night 1 Begins Game)
+       ================================================================= */
+    function initiateNightPhase() {
+      currentPhase = 'night_mafia';
+      targetedStudentId = null;
+      nightMafiaChoice = null;
+      nightDoctorChoice = null;
+      nightPoliceChoice = null;
+
+      document.getElementById('app-container').classList.add('night-mode');
+      document.getElementById('ambient-flash').classList.add('active');
+      switchViewPanel('view-gameplay');
+
+      const banner = document.getElementById('game-phase-banner');
+      banner.className = 'phase-banner night-style';
+      banner.innerText = `NIGHT ${currentDayNumber} — ALL STUDENTS SLEEP`;
+
+      document.getElementById('pill-status-mode').innerText = `NIGHT ${currentDayNumber}`;
+      document.getElementById('gameplay-pass-notice').style.display = 'none';
+
+      playSfx('curse_death');
+      speakHostBroadcast("밤이 되었습니다. 모두 눈을 감고 잠에 들어주세요.", `Night ${currentDayNumber} has come. Everyone please close your eyes and fall asleep.`);
+
+      advanceNightSequence();
+    }
+
+    function advanceNightSequence() {
+      targetedStudentId = null;
+      const user = currentStudents[0];
+
+      if (currentPhase === 'night_mafia') {
+        const isUserMafia = user.isAlive && user.role === 'mafia';
+        const anyMafiaAlive = currentStudents.some(s => s.isAlive && s.role === 'mafia');
+
+        if ((isUserMafia || selectedMode === 'pass') && anyMafiaAlive) {
+          const activeMafia = currentStudents.find(s => s.isAlive && s.role === 'mafia');
+          if (selectedMode === 'pass') {
+            alert(`[SECRET NIGHT PHASE]\nPass phone to Mafia player: ${activeMafia.name}`);
+          }
+          document.getElementById('action-header-title').innerText = "🔪 MAFIA: SELECT TARGET TO ELIMINATE:";
+          document.getElementById('btn-submit-action').innerText = "Execute Kill 💀";
+          document.getElementById('phase-guide-text').innerText = "Choose an innocent student to execute tonight.";
+          renderVotingClassmates();
+          startPhaseCountdown(25, () => {
+            if (!nightMafiaChoice) autoPickMafia();
+            advanceNightSequence();
+          });
+          currentPhase = 'night_doctor';
+        } else {
+          autoPickMafia();
+          currentPhase = 'night_doctor';
+          advanceNightSequence();
+        }
+      } else if (currentPhase === 'night_doctor') {
+        const isUserDoctor = user.isAlive && user.role === 'doctor';
+        const doctorStudent = currentStudents.find(s => s.isAlive && s.role === 'doctor');
+
+        if ((isUserDoctor || selectedMode === 'pass') && doctorStudent) {
+          if (selectedMode === 'pass') {
+            alert(`[SECRET NIGHT PHASE]\nPass phone to Doctor: ${doctorStudent.name}`);
+          }
+          document.getElementById('action-header-title').innerText = "💉 DOCTOR: SELECT STUDENT TO PROTECT:";
+          document.getElementById('btn-submit-action').innerText = "Inject Antidote 🛡️";
+          document.getElementById('phase-guide-text').innerText = "Choose one student to shield from death tonight.";
+          renderVotingClassmates();
+          startPhaseCountdown(25, () => {
+            if (!nightDoctorChoice) autoPickDoctor();
+            advanceNightSequence();
+          });
+          currentPhase = 'night_police';
+        } else {
+          autoPickDoctor();
+          currentPhase = 'night_police';
+          advanceNightSequence();
+        }
+      } else if (currentPhase === 'night_police') {
+        const isUserPolice = user.isAlive && user.role === 'police';
+        const policeStudent = currentStudents.find(s => s.isAlive && s.role === 'police');
+
+        if ((isUserPolice || selectedMode === 'pass') && policeStudent) {
+          if (selectedMode === 'pass') {
+            alert(`[SECRET NIGHT PHASE]\nPass phone to Police: ${policeStudent.name}`);
+          }
+          document.getElementById('action-header-title').innerText = "🔦 POLICE: SELECT SUSPECT TO SCAN:";
+          document.getElementById('btn-submit-action').innerText = "Scan Phone 🔍";
+          document.getElementById('phase-guide-text').innerText = "Scan a student to uncover if they are Mafia or Citizen.";
+          renderVotingClassmates();
+          startPhaseCountdown(25, () => resolveNightOutcomes());
+        } else {
+          resolveNightOutcomes();
+        }
+      }
+    }
+
+    function autoPickMafia() {
+      const targets = currentStudents.filter(s => s.isAlive && s.role !== 'mafia');
+      if (targets.length > 0) {
+        nightMafiaChoice = targets[Math.floor(Math.random() * targets.length)].id;
+      }
+    }
+
+    function autoPickDoctor() {
+      const living = currentStudents.filter(s => s.isAlive);
+      if (living.length > 0) {
+        nightDoctorChoice = living[Math.floor(Math.random() * living.length)].id;
+      }
+    }
+
+    function resolveNightOutcomes() {
+      clearInterval(timerHandle);
+      playSfx('alert');
+
+      let victim = null;
+      let wasHealed = false;
+
+      if (nightMafiaChoice !== null) {
+        victim = currentStudents.find(s => s.id === nightMafiaChoice);
+        if (nightDoctorChoice === nightMafiaChoice) {
+          wasHealed = true;
+        } else {
+          victim.isAlive = false;
+        }
+      }
+
+      if (victim && !wasHealed) {
+        playSfx('curse_death');
+        speakHostBroadcast("아침이 밝았습니다. 밤 사이에 사망자가 발생했습니다.", `Morning has broken. ${victim.name} was murdered during the night.`);
+        displayDeathDialog(
+          "NIGHT CASUALTY FOUND",
+          `Morning has arrived. ${victim.name} was found dead inside the retreat building. (Role: ${victim.role.toUpperCase()})`
+        );
+      } else if (wasHealed) {
+        playSfx('heal_chime');
+        speakHostBroadcast("의사의 치료로 인해 사망자가 없습니다.", "The Doctor successfully saved the target tonight.");
+        displayDeathDialog(
+          "DOCTOR INTERVENTION",
+          "Morning has arrived. The Doctor successfully administered the antidote and prevented an execution!"
+        );
+      } else {
+        displayDeathDialog(
+          "PEACEFUL MORNING",
+          "Morning has arrived. No casualties occurred during the night."
+        );
+      }
+    }
+
+    /* =================================================================
+       8. VICTORY CHECK & GAME OVER
+       ================================================================= */
+    function verifyGameOver() {
+      const mafias = currentStudents.filter(s => s.isAlive && s.role === 'mafia').length;
+      const citizens = currentStudents.filter(s => s.isAlive && s.role !== 'mafia').length;
+
+      if (mafias === 0) {
+        triggerGameOver(true, "CITIZENS ESCAPED THE RETREAT!", "All Mafia conspirators were identified and eliminated. The remaining students escaped safely!");
+        return true;
+      } else if (mafias >= citizens) {
+        triggerGameOver(false, "MAFIA CONTROLS THE RETREAT", "The Mafia outnumbered the innocent students. The curse claims everyone.");
+        return true;
+      }
+      return false;
+    }
+
+    function triggerGameOver(citizensWon, title, desc) {
+      playSfx(citizensWon ? 'heal_chime' : 'curse_death');
+      document.getElementById('ambient-flash').classList.toggle('active', !citizensWon);
+      switchViewPanel('view-gameover');
+
+      document.getElementById('gameover-skull-icon').innerText = citizensWon ? "🏆" : "💀";
+      document.getElementById('gameover-headline').innerText = title;
+      document.getElementById('gameover-headline').style.color = citizensWon ? "var(--tech-cyan)" : "var(--blood-red)";
+      document.getElementById('gameover-details').innerText = desc;
+
+      const summaryList = document.getElementById('final-summary-list');
+      summaryList.innerHTML = '';
+
+      currentStudents.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'roster-row';
+        item.innerHTML = `
+          <div class="roster-info">
+            <span>${s.avatar}</span>
+            <div>
+              <div style="font-weight:700; color:#fff;">${s.name} ${s.isUser ? '(YOU)' : ''}</div>
+              <div style="font-size:0.65rem; color:${s.isAlive ? 'var(--terminal-green)' : 'var(--blood-red)'}; font-family:'JetBrains Mono',monospace;">
+                ${s.isAlive ? 'SURVIVED' : 'DEAD'}
+              </div>
+            </div>
+          </div>
+          <span style="font-family:'Orbitron',sans-serif; font-size:0.75rem; font-weight:800;" class="${ROLE_DEFINITIONS[s.role].className}">
+            ${s.role.toUpperCase()}
+          </span>
+        `;
+        summaryList.appendChild(item);
+      });
+    }
+
+    function displayDeathDialog(headline, body) {
+      document.getElementById('modal-headline-title').innerText = headline;
+      document.getElementById('modal-body-desc').innerText = body;
+      document.getElementById('death-modal').classList.add('active');
+    }
+
+    function dismissDeathModal() {
+      document.getElementById('death-modal').classList.remove('active');
+      if (verifyGameOver()) return;
+
+      if (currentPhase === 'day') {
+        currentDayNumber++;
+        initiateNightPhase();
+      } else {
+        initiateDayPhase();
+      }
+    }
+
+    /* =================================================================
+       9. TABS, CCTV & TIMERS
+       ================================================================= */
+    function switchViewPanel(viewId) {
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
+
+    function changeGameTab(tabName) {
+      playSfx('tap');
+      document.getElementById('tab-btn-chat').classList.toggle('active', tabName === 'chat');
+      document.getElementById('tab-btn-cctv').classList.toggle('active', tabName === 'cctv');
+      document.getElementById('tab-btn-gps').classList.toggle('active', tabName === 'gps');
+      document.getElementById('tab-btn-dm').classList.toggle('active', tabName === 'dm');
+
+      document.getElementById('panel-chat-stream').style.display = tabName === 'chat' ? 'flex' : 'none';
+      document.getElementById('panel-cctv-view').style.display = tabName === 'cctv' ? 'flex' : 'none';
+      document.getElementById('panel-gps-boundary').style.display = tabName === 'gps' ? 'flex' : 'none';
+      document.getElementById('panel-dm-chat').style.display = tabName === 'dm' ? 'flex' : 'none';
+    }
+
+    function cycleCctvCamera(delta) {
+      playSfx('tap');
+      activeCctvIndex = (activeCctvIndex + delta + RETREAT_CAMERAS.length) % RETREAT_CAMERAS.length;
+      const cam = RETREAT_CAMERAS[activeCctvIndex];
+      document.getElementById('cctv-camera-label').innerText = `${cam.id} [${cam.name.toUpperCase()}]`;
+      document.getElementById('cctv-location-title').innerText = cam.name;
+
+      const occupants = currentStudents.filter(s => s.isAlive && s.location.includes(cam.name.split(' ')[0]));
+      document.getElementById('cctv-motion-status').innerText = `Motion: ${occupants.length} students (${occupants.map(o => o.name.split(' ')[0]).join(', ') || 'Empty'})`;
+    }
+
+    function startPhaseCountdown(seconds, onFinish) {
+      clearInterval(timerHandle);
+      timerCountdown = seconds;
+      renderTimerText();
+
+      timerHandle = setInterval(() => {
+        timerCountdown--;
+        renderTimerText();
+        if (timerCountdown % 2 === 0 && timerCountdown <= 10) playSfx('heartbeat');
+
+        if (timerCountdown <= 0) {
+          clearInterval(timerHandle);
+          if (onFinish) onFinish();
+        }
+      }, 1000);
+    }
+
+    function renderTimerText() {
+      const m = String(Math.floor(timerCountdown / 60)).padStart(2, '0');
+      const s = String(timerCountdown % 60).padStart(2, '0');
+      document.getElementById('countdown-timer').innerText = `${m}:${s}`;
+    }
+
+    function fastForwardPhase() {
+      timerCountdown = 0;
+      renderTimerText();
+    }
+
+    function restartSetup() {
+      clearInterval(timerHandle);
+      document.getElementById('app-container').classList.remove('night-mode');
+      document.getElementById('ambient-flash').classList.remove('active');
+      currentDayNumber = 1;
+      switchViewPanel('view-setup');
+      document.getElementById('pill-status-mode').innerText = "SYSTEM READY";
+    }
+  </script>
+</body>
+
+</html>
